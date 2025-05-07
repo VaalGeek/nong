@@ -235,50 +235,13 @@ export async function verify({
   stakeholderId?: string
   email?: string
   mobile?: string
-  fcmToken: string
+  fcmToken?: string
 }) {
-  if (!fcmToken) {
-    throw new Error('FCM token is required')
-  }
-
   const normalizedEmail = email?.toLowerCase()
   const trimmedMobile = mobile?.trim()
 
-  // Case: refresh FCM token later (no stakeholderId)
-  if (!stakeholderId && normalizedEmail && trimmedMobile) {
-    const stakeholder = await Stakeholder.findOne({
-      email: normalizedEmail,
-      cell: { $in: [trimmedMobile] },
-      verified: true
-    })
-
-    if (!stakeholder) {
-      throw new Error('Matching verified stakeholder not found')
-    }
-
-    if (stakeholder.fcmToken === fcmToken) {
-      return {
-        success: true,
-        _id: stakeholder._id,
-        firstTime: false,
-        message: 'FCM token is already up to date'
-      }
-    }
-
-    stakeholder.fcmToken = fcmToken
-    await stakeholder.save()
-
-    return {
-      success: true,
-      _id: stakeholder._id,
-      firstTime: false,
-      message: 'Stakeholder FCM token updated without stakeholderId'
-    }
-  }
-
-  // Require all fields for first-time verification
   if (!stakeholderId || !normalizedEmail || !trimmedMobile) {
-    throw new Error('stakeholderId, email, mobile, and fcmToken are required for initial verification')
+    throw new Error('stakeholderId, email, and mobile are required')
   }
 
   const stakeholder = await Stakeholder.findById(stakeholderId)
@@ -287,41 +250,49 @@ export async function verify({
     throw new Error('Stakeholder not found')
   }
 
-  // First-time verification
-  if (!stakeholder.fcmToken && stakeholder.verified === false) {
-    stakeholder.email = normalizedEmail
-    stakeholder.cell = [trimmedMobile]
-    stakeholder.fcmToken = fcmToken
-    stakeholder.verified = true
-    await stakeholder.save()
+  // First-time: no token yet, just identity match and mark verified
+  if (!stakeholder.fcmToken && !fcmToken && stakeholder.verified === false) {
+    if (
+      stakeholder.email === normalizedEmail &&
+      stakeholder.cell?.includes(trimmedMobile)
+    ) {
+      stakeholder.verified = true
+      await stakeholder.save()
 
-    return {
-      success: true,
-      _id: stakeholder._id,
-      firstTime: true,
-      message: 'Stakeholder verified and registered for notifications'
+      return {
+        success: true,
+        _id: stakeholder._id,
+        firstTime: true,
+        message: 'Stakeholder verified (token to be registered later)'
+      }
+    } else {
+      throw new Error('Email or mobile does not match existing record')
     }
   }
 
-  // Subsequent verification
-  if (
-    stakeholder.verified === true &&
-    stakeholder.email === normalizedEmail &&
-    stakeholder.cell?.includes(trimmedMobile)
-  ) {
-    stakeholder.fcmToken = fcmToken
-    await stakeholder.save()
+  // Token update after first-time verification
+  if (fcmToken && stakeholder.verified === true) {
+    if (
+      stakeholder.email === normalizedEmail &&
+      stakeholder.cell?.includes(trimmedMobile)
+    ) {
+      stakeholder.fcmToken = fcmToken
+      await stakeholder.save()
 
-    return {
-      success: true,
-      _id: stakeholder._id,
-      firstTime: false,
-      message: 'Stakeholder FCM token updated successfully'
+      return {
+        success: true,
+        _id: stakeholder._id,
+        firstTime: false,
+        message: 'Stakeholder FCM token updated successfully'
+      }
+    } else {
+      throw new Error('Email or mobile does not match existing record')
     }
   }
 
-  throw new Error('Stakeholder data does not match')
+  throw new Error('Invalid request: FCM token missing or verification status unclear')
 }
+
 
 
 
