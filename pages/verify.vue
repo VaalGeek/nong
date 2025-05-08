@@ -7,7 +7,7 @@
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-2xl shadow-xl p-8 space-y-6 w-80 text-center">
 
-          <h3 class="text-xl font-semibold text-gray-800">Please Install School App</h3>
+          <h3 class="text-xl font-semibold text-gray-800">Install School App</h3>
 
           <!-- iOS Instructions -->
           <div v-if="isIos && !isInStandaloneMode">
@@ -173,10 +173,11 @@ async function verifyStakeholder() {
 
   try {
     let fcmToken: string | undefined
+    
     if ('Notification' in window && Notification.permission !== 'granted') {
       await Notification.requestPermission()
     }
-
+    
     try {
       fcmToken = await getToken($messaging, { vapidKey: config.public.VAPID_KEY })
     } catch (tokenErr) {

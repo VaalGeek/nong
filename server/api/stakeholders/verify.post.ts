@@ -2,11 +2,12 @@
 
 import { verify } from "~/server/controllers/StakeholderController"
 
+
 export default defineEventHandler(async (event) => {
- 
+  
   try {
     const body = await readBody(event);
-  
+   console.log(body)
     const result = await verify(body)
     return result
   } catch (error: any) {
