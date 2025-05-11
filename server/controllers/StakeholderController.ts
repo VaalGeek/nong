@@ -337,9 +337,10 @@ export async function updateVerification({ _id, fcmToken }: { _id: string, fcmTo
   }
 }
 
-export async function fetchUnsubscribers() {
+export async function fetchUnsubscribers(schoolId:string) {
   // Base query for unsubscribed users with valid cell array
   const baseQuery = {
+    schoolId,
     verified: false,
     $or: [{ fcmToken: '' }, { fcmToken: null }]
   };
