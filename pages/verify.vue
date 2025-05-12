@@ -195,7 +195,7 @@ async function verifyStakeholder() {
         fcmToken = await getFCMToken();
         if (!fcmToken) throw new Error('FCM token not obtained.')
       } catch (tokenErr) {
-        throw new Error('Could not subscribe to notifications. Please allow notifications in your browser.')
+        throw new Error('FCM Token Error:Could not verify your account. This could be caused by poor internet connection')
       }
     } else {
       // iOS browser - defer real token
@@ -222,14 +222,14 @@ async function verifyStakeholder() {
     localStorage.setItem('isStakeholder', 'true')
     localStorage.setItem('fcmToken', fcmToken)
     isVerified.value = true
-    message.value = 'You have been verified successfully.';
+    message.value = 'You have been verified successfully.You can close this site, and open the app from home screen';
     // Wait a bit before redirecting to the home page, giving user time to read
-    setTimeout(() => {
+   /* setTimeout(() => {
       manualDismiss.value = false
       router.push('/')
     }, 3000) // 3 seconds delay
    
-
+*/
     // Prompt install if supported
     if (canInstall.value) {
       const installChoice = await promptInstall()
